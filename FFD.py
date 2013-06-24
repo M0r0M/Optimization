@@ -5,7 +5,7 @@
 # ------------------------------------------------------
 # class declaration
 
-class Point:
+class Point(object):
 	""" 3D point """
 	
 	def __init__(self,x,y,z):
