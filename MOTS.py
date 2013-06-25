@@ -4,7 +4,9 @@ import Solution
 class TabuSearch(object):
     """ object implementation the Multi-Objective Tabu Search """
 
-    def __init__(self,datum,maxIter,stepSize,diversify=25,intensify=15,reduce=45,STMlen=20,debug=False):
+    def __init__(self,datum,maxIter,stepSize,diversify=25,intensify=15,reduce=45,STMlen=20,regionPerDV=10,debug=False):
+        
+        self.datum = datum # the datum will serve as reference for the optimization
         
         self.STM = list() # short term memory
         self.MTM = list() # medium term memory
@@ -14,6 +16,8 @@ class TabuSearch(object):
         self.history = list() # store the solutions in order of visit (can store a same solution multiple times !)
         
         self.STMlen = STMlen # maximum size of the short term memory
+        
+        self.region = self.partitionDesignSpace(regionPerDV)
         
         self.maxIter = maxIter # maximum iterations of the algorithm
         
@@ -30,7 +34,7 @@ class TabuSearch(object):
         
         self.optimize()
         
-    def optimize(self):
+    def optimize(self,datum):
         """ perform the Tabu Search as implemented in
         'The development of a multi-objective Tabu Search 
         algorithm for continuous optimisation problems'
@@ -38,7 +42,7 @@ class TabuSearch(object):
         D.M. Jaeggi et al. (2008)
         """
         
-        self.history.append(datum)
+        self.history.append(self.datum)
         self.nextMoveHookeJeeves = True
         
         while self.iIter < self.maxIter: # stopping Criteria Not Met
@@ -176,13 +180,18 @@ class TabuSearch(object):
 
     def DiversifyMove(self):
         # not functionnal
-        regionCount = dict.fromkeys(listRegion)
+        regionCount = list()
+        for region in self.region:
+            regionCount.append(0)
+        
         for point in self.LTM:
-            for region in listRegion:
-                if point in region:
-                    regionCount[region] += 1
-        newRegion = min(regionCount)
-        newPoint = selectRandomPointFromRegion(newRegion)
+            for i in range(len(self.region)):
+                #if point in region:
+                for j in range(len(point.DV)):
+                    if point.DV[j] > region[j][0] and point.DV[j] < region[j][1]
+                        regionCount[i] += 1
+        newRegion = self.minNotEmpty(regionCount)
+        newPoint = self.selectRandomPointFromRegion(newRegion)
         if self.isTabu(newPoint) or not newPoint.isValid:
             self.DiversifyMove()
         self.iIter += 1
@@ -236,7 +245,51 @@ class TabuSearch(object):
             content += element.description
         file.write(content)
         file.close()
-            
+    
+    def partitionDesignSpace(self,regionPerDV):
+        """ create the diversification regions from the design space """
+        listRegion = list()
+        boundaries = self.datum.boundaries
+        
+        # create a list of list of the region vertices by design vectors
+        listBoundaryVertices = list()
+        for i in range(len(boundaries)):
+            listDVdivision = list()
+            for j in range(regionPerDV+1):
+                listDVdivision.append(boundaries[i][0]+j*(boundaries[i][1]-boundaries[i][0])/regionPerDV)
+            listBoundaryVertices.append(listDVdivision)
+        
+        # TO DO: create the actual regions for the listBoundaryVertices
+        
+    
+    def minNotEmpty(self,regionCount):
+        """ returns the region with the smallest non-zero regionCount,
+        if multiple regions with the smallest regionCount, take the first one """
+        # should incorporate a random pick among the smallest regionCount regions
+        
+        minIndex = 0
+        mini = regionCount[minIndex]
+        for i in range(1,len(regionCount)):
+            if regionCount[i] > 0 and regionCount[i] < mini:
+                minIndex = i
+                mini = regionCount[i]
+        if self.debug:
+            print "Less populated non-zero region index: " + str(minIndex) + " Population in region: " + str(mini)
+        return self.region[minIndex]
+    
+    def selectRandomPointFromRegion(self,region):
+        """ returns a point in a specific region of the design space selected randomly """
+        
+        listPointsInRegion = list()
+        for point in self.history:
+            pointInRegion = True
+            for i in range(len(point.DV)):
+                if point.DV[i] < region[i][0] or point.DV[i] > region[i][1]:
+                    pointInRegion = False
+            if pointInRegion:
+                listPointsInRegion.append(point)
+        return self.selectRandom(listPointsInRegion)
+        
 if __name__ == "__main__":
     
     
