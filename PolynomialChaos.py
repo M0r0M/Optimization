@@ -638,40 +638,55 @@ def StandardDeviation(listCoeff,listPC):
         variance += (listCoeff[i]**2) * fact(i) # fact(i)==GHQ(listPC[i]**2)
     return np.sqrt(variance)
 
-
-if __name__ == '__main__':
+def PrintXiWi(n=5,write=False):
     result = list()
-    for i in range(16):
+    for i in range(n+1):
         result.append(HermiteXiWi(i))
     content = str()
-    for i in range(len(result)):
+    if not write:
+        content+='Hermite Xi Wi\n'
+    for i in range(1,len(result)):
         content+=str(i)+'\n'
         for j in range(len(result[i])):
             content+=str(result[i][j][0]) + '\t' + str(result[i][j][1]) + '\n'
-    file = open('HermiteXiWi.txt','w')
-    file.write(content)
-    file.close()
+    if write:
+        file = open('HermiteXiWi.txt','w')
+        file.write(content)
+        file.close()
     
     result = list()
-    for i in range(16):
+    for i in range(n+1):
         result.append(LaguerreXiWi(i))
-    content = str()
-    for i in range(len(result)):
+    if write:
+        content = str()
+    else:
+        content+='Laguerre Xi Wi\n'
+    for i in range(1,len(result)):
         content+=str(i)+'\n'
         for j in range(len(result[i])):
             content+=str(result[i][j][0]) + '\t' + str(result[i][j][1]) + '\n'
-    file = open('LaguerreXiWi.txt','w')
-    file.write(content)
-    file.close()
+    if write:
+        file = open('LaguerreXiWi.txt','w')
+        file.write(content)
+        file.close()
     
     result = list()
-    for i in range(16):
+    for i in range(n+1):
         result.append(LegendreXiWi(i))
-    content = str()
-    for i in range(len(result)):
+    if write:
+        content = str()
+    else:
+        content+='Legendre Xi Wi\n'
+    for i in range(1,len(result)):
         content+=str(i)+'\n'
         for j in range(len(result[i])):
             content+=str(result[i][j][0]) + '\t' + str(result[i][j][1]) + '\n'
-    file = open('LegendreXiWi.txt','w')
-    file.write(content)
-    file.close()
+    if write:
+        file = open('LegendreXiWi.txt','w')
+        file.write(content)
+        file.close()
+    else:
+        print content
+
+if __name__ == '__main__':
+    PrintXiWi()
