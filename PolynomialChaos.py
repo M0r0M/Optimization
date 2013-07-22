@@ -89,6 +89,158 @@ def Evaluate(Polynomial,x):
 
 
 
+def HermiteCoeff(n):
+	""" recursively compute the list of coefficients 
+	of the physicist Hermite polynomial
+	of order n 
+    ------------------------------------------------------
+    input: n, an integer
+    ------------------------------------------------------
+    output: a list, the list of Hermite Physist ploynomial (list of list of float)
+    ------------------------------------------------------
+    """
+	if n is 0:
+		return [1]
+	if n is 1:
+		return [2,0]
+	else:
+		result = list()
+		for coeff in HermiteCoeff(n-1):
+			result.append(2 * coeff)
+		result.append(0)
+		i = 0
+		while i <= n-2:
+			result[i+2] -= 2*(n-1) * HermiteCoeff(n-2)[i]
+			i += 1
+		return result
+
+def Hermite(x,n):
+    # !!! USES NUMPY !!!
+	""" return the evaluation in x 
+	of the Hermite polynomial of
+	order n 
+    ------------------------------------------------------
+    input: x, a float
+    input: n, an integer
+    ------------------------------------------------------
+    output: a float, the evaluation of the hermite polynomial of order n in x
+    ------------------------------------------------------
+    """
+	return np.polyval(HermiteCoeff(n),x)
+
+def RatioHn(x,n):
+	"""returns the ratio of Hn/Hn' 
+    ------------------------------------------------------
+    input: x, a float
+    input: n, an integer
+    ------------------------------------------------------
+    output: a float, the quotient of the hermite polynomial of order n and its derivate at x
+    ------------------------------------------------------
+    """
+	return Hermite(x,n)/(2 * n * Hermite(x,n-1))
+
+def RootsHn(n):
+    # !!! USES NUMPY !!!
+	""" Gives the list of roots 
+	of the Hermite polynomial 
+	of order n 
+    ------------------------------------------------------
+    input: n, an integer
+    ------------------------------------------------------
+    output: a list, the roots of the hermite polynomial of order n (list of float)
+    ------------------------------------------------------
+    """
+	return np.roots(HermiteCoeff(n))
+
+def HermiteXiWi(n):
+	""" gives a list of lists
+	xi: collocation points
+	wi: Hermite weights 
+    ------------------------------------------------------
+    input: n, an integer
+    ------------------------------------------------------
+    output: a list, the collocation point and the weight of the Hermite quadrature of order n
+    ------------------------------------------------------
+    """
+	result = list()
+	rootList = RootsHn(n)
+	for root in rootList:
+		xi = root
+		wi = ((2**(n-1)) * fact(n-1) * (np.pi**0.5)) / (n*Hermite(xi,n-1)**2)
+		result.append([xi,wi])
+	return result
+
+def tupleHermiteXi(n,multiplier=1):
+    """
+    ------------------------------------------------------
+    input: n, an integer
+    input: multiplier, a float
+    ------------------------------------------------------
+    output: a tuple, the collocation point of hermite quadrature of order n multiplied by multiplier
+    ------------------------------------------------------
+    """
+    XiWi = HermiteXiWi(n)
+    Xi = list()
+    for point in XiWi:
+        Xi.append(multiplier*point[0])
+    Xi = tuple(Xi)
+    return Xi
+
+def DeterministicSamples(Mean,stdDev,PCorder,multiplier=np.sqrt(2),XiWi=[]):
+    """
+    ------------------------------------------------------
+    input: Mean, a float
+    input: stdDev, a float
+    input: PCoder, an integer
+    input: multiplier, a float
+    XiWi: a list
+    ------------------------------------------------------
+    output: a list, the list of deterministic sample inputs (list of floats)
+    """
+    if XiWi == []:
+        XiWi = HermiteXiWi(PCorder)
+    samples = list()
+    for i in range(PCorder):
+        samples.append(Mean + stdDev * XiWi[i][0] * multiplier)
+    return samples
+    
+def HermiteGaussQuadrature(n,polynomial):
+    """ DEPRECIATED """
+    """ Compute the gauss Hermite quadrature of order n """
+    """ due to approximation errors, two orthogonal PC 
+	have a small gauss quadrature (~1e-14) but not 0 
+    ------------------------------------------------------
+    input: n, an integer
+    input: polynomial, a list of float
+    ------------------------------------------------------
+    output: a float, the Hermite quadrature of order n of the polynomial
+    """
+    result = 0
+    sampleList = HermiteXiWi(n)
+    for sample in sampleList:
+		# sample[0] = xi and sample[1] = wi
+		result += sample[1] * Evaluate(polynomial,sample[0]) 
+    return result
+    
+def HermiteGaussQuadratureCorrected(n,polynomial):
+	""" Compute de the Hermite Gauss quadrature of order n """
+	""" correct to quadrature the PC of order 0 to 1;
+	and the other PC of higher order to 0 
+    ------------------------------------------------------
+    input: n, an integer
+    input: polynomial, a list of float
+    ------------------------------------------------------
+    output: a float, the Hermite quadrature of order n of the polynomial
+    """
+	result = 0
+	sampleList = HermiteXiWi(n)
+	for sample in sampleList:
+		# sample[0] = xi and sample[1] = wi
+		result += sample[1] * Evaluate(polynomial,sample[0]*np.sqrt(2)) 
+	result = result / np.sqrt(np.pi)
+	
+	return result
+
 # ------------------------------------------------------
 # legendre chaos
 
@@ -372,157 +524,6 @@ def LaguerreGaussQuadrature(n,polynomial):
 # ------------------------------------------------------
 # hermite guass quadrature
 
-def HermiteCoeff(n):
-	""" recursively compute the list of coefficients 
-	of the physicist Hermite polynomial
-	of order n 
-    ------------------------------------------------------
-    input: n, an integer
-    ------------------------------------------------------
-    output: a list, the list of Hermite Physist ploynomial (list of list of float)
-    ------------------------------------------------------
-    """
-	if n is 0:
-		return [1]
-	if n is 1:
-		return [2,0]
-	else:
-		result = list()
-		for coeff in HermiteCoeff(n-1):
-			result.append(2 * coeff)
-		result.append(0)
-		i = 0
-		while i <= n-2:
-			result[i+2] -= 2*(n-1) * HermiteCoeff(n-2)[i]
-			i += 1
-		return result
-
-def Hermite(x,n):
-    # !!! USES NUMPY !!!
-	""" return the evaluation in x 
-	of the Hermite polynomial of
-	order n 
-    ------------------------------------------------------
-    input: x, a float
-    input: n, an integer
-    ------------------------------------------------------
-    output: a float, the evaluation of the hermite polynomial of order n in x
-    ------------------------------------------------------
-    """
-	return np.polyval(HermiteCoeff(n),x)
-
-def RatioHn(x,n):
-	"""returns the ratio of Hn/Hn' 
-    ------------------------------------------------------
-    input: x, a float
-    input: n, an integer
-    ------------------------------------------------------
-    output: a float, the quotient of the hermite polynomial of order n and its derivate at x
-    ------------------------------------------------------
-    """
-	return Hermite(x,n)/(2 * n * Hermite(x,n-1))
-
-def RootsHn(n):
-    # !!! USES NUMPY !!!
-	""" Gives the list of roots 
-	of the Hermite polynomial 
-	of order n 
-    ------------------------------------------------------
-    input: n, an integer
-    ------------------------------------------------------
-    output: a list, the roots of the hermite polynomial of order n (list of float)
-    ------------------------------------------------------
-    """
-	return np.roots(HermiteCoeff(n))
-
-def HermiteXiWi(n):
-	""" gives a list of lists
-	xi: collocation points
-	wi: Hermite weights 
-    ------------------------------------------------------
-    input: n, an integer
-    ------------------------------------------------------
-    output: a list, the collocation point and the weight of the Hermite quadrature of order n
-    ------------------------------------------------------
-    """
-	result = list()
-	rootList = RootsHn(n)
-	for root in rootList:
-		xi = root
-		wi = ((2**(n-1)) * fact(n-1) * (np.pi**0.5)) / (n*Hermite(xi,n-1)**2)
-		result.append([xi,wi])
-	return result
-
-def tupleHermiteXi(n,multiplier=1):
-    """
-    ------------------------------------------------------
-    input: n, an integer
-    input: multiplier, a float
-    ------------------------------------------------------
-    output: a tuple, the collocation point of hermite quadrature of order n multiplied by multiplier
-    ------------------------------------------------------
-    """
-    XiWi = HermiteXiWi(n)
-    Xi = list()
-    for point in XiWi:
-        Xi.append(multiplier*point[0])
-    Xi = tuple(Xi)
-    return Xi
-
-def DeterministicSamples(Mean,stdDev,PCorder,multiplier=np.sqrt(2),XiWi=[]):
-    """
-    ------------------------------------------------------
-    input: Mean, a float
-    input: stdDev, a float
-    input: PCoder, an integer
-    input: multiplier, a float
-    XiWi: a list
-    ------------------------------------------------------
-    output: a list, the list of deterministic sample inputs (list of floats)
-    """
-    if XiWi == []:
-        XiWi = HermiteXiWi(PCorder)
-    samples = list()
-    for i in range(PCorder):
-        samples.append(Mean + stdDev * XiWi[i][0] * multiplier)
-    return samples
-    
-def HermiteGaussQuadrature(n,polynomial):
-    """ DEPRECIATED """
-    """ Compute the gauss Hermite quadrature of order n """
-    """ due to approximation errors, two orthogonal PC 
-	have a small gauss quadrature (~1e-14) but not 0 
-    ------------------------------------------------------
-    input: n, an integer
-    input: polynomial, a list of float
-    ------------------------------------------------------
-    output: a float, the Hermite quadrature of order n of the polynomial
-    """
-    result = 0
-    sampleList = HermiteXiWi(n)
-    for sample in sampleList:
-		# sample[0] = xi and sample[1] = wi
-		result += sample[1] * Evaluate(polynomial,sample[0]) 
-    return result
-    
-def HermiteGaussQuadratureCorrected(n,polynomial):
-	""" Compute de the Hermite Gauss quadrature of order n """
-	""" correct to quadrature the PC of order 0 to 1;
-	and the other PC of higher order to 0 
-    ------------------------------------------------------
-    input: n, an integer
-    input: polynomial, a list of float
-    ------------------------------------------------------
-    output: a float, the Hermite quadrature of order n of the polynomial
-    """
-	result = 0
-	sampleList = HermiteXiWi(n)
-	for sample in sampleList:
-		# sample[0] = xi and sample[1] = wi
-		result += sample[1] * Evaluate(polynomial,sample[0]*np.sqrt(2)) 
-	result = result / np.sqrt(np.pi)
-	
-	return result
 
 # ------------------------------------------------------
 # auxiliary functions
