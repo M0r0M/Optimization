@@ -523,17 +523,18 @@ def LaguerreGaussQuadrature(n,polynomial):
 
 
 # ------------------------------------------------------
-# Non-Intrusive PC (by S. Hosder), To be tested
+# Non-Intrusive PC (by S. Hosder)
 
-def NIPC(n,listOfSamples,listOfResults,scheme='Hermite'): 
-    """ it is assumed that len(listOfSamples) == len(listOfResults) == n """
+def NIPC(listOfSamples,listOfResults,scheme='Hermite'): 
+    """ it is assumed that len(listOfSamples) == len(listOfResults) """
     
+    assert len(listOfSamples) == len(listOfResults)
     if scheme == 'Legendre':
-        CoeffList = LegendreCoeffList(n)
+        CoeffList = LegendreCoeffList(len(listOfSamples))
     elif scheme == 'Laguerre':
-        CoeffList = LaguerreCoeffList(n)
+        CoeffList = LaguerreCoeffList(len(listOfSamples))
     else:
-        CoeffList = HermiteCoeffList(n)
+        CoeffList = HermiteCoeffProbaList(len(listOfSamples))
     matrixCoeff = list()
     for i in range(n+1):
         matrixLine = list()
