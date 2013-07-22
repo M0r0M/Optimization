@@ -521,9 +521,38 @@ def LaguerreGaussQuadrature(n,polynomial):
         result += sample[1] * Evaluate(polynomial,sample[0])
     return result
 
-# ------------------------------------------------------
-# hermite guass quadrature
 
+# ------------------------------------------------------
+# Non-Intrusive PC (by S. Hosder), To be tested
+
+def NIPC(n,listOfSamples,listOfResults,scheme='Hermite'): 
+    """ it is assumed that len(listOfSamples) == len(listOfResults) == n """
+    
+    if scheme == 'Legendre':
+        CoeffList = LegendreCoeffList(n)
+    elif scheme == 'Laguerre':
+        CoeffList = LaguerreCoeffList(n)
+    else:
+        CoeffList = HermiteCoeffList(n)
+    matrixCoeff = list()
+    for i in range(n+1):
+        matrixLine = list()
+        for PCexpansion in CoeffList:
+            matrixLine.append(Evaluate(PCexpansion,listOfSamples[i]))
+        matrixCoeff.append(matrixLine)
+    PhiMatrix = np.matrix(matrixCoeff) # create the proper matrix object
+    try:
+        InvPhiMatrix = PhiMatrix.getI() # inverse the matrix
+    except np.linalg.linalg.LinAlgError:
+        print "Matrix is not inversible"
+        # do something here
+        return None
+    MatrixResult = np.matrix(listOfResults).getT()
+    MatrixOfAlpha = InvPhiMatrix.dot(MatrixResult).getT().getA()[0]
+    listOfAlpha = list()
+    for i in range(len(MatrixOfAlpha)): # transform the matrix into a list
+        listOfAlpha.append(MatrixOfAlpha[i])
+    return listOfAlpha
 
 # ------------------------------------------------------
 # auxiliary functions
